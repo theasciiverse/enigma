@@ -42,6 +42,8 @@ and status lines).
   again, so all three move back to the middle at once.
 - **Windows** (`main.c`): `chdir()` is declared through `<direct.h>`;
   the call was an implicit declaration, an error in C99 and later.
+  `GetUserName()` is given the `DWORD` it takes instead of an `int`,
+  which Clang (the ARM64 Windows build) refuses.
   Gurusamy Sarathy's Windows support (2001, PDCurses) is otherwise
   Tatham's own.
 

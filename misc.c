@@ -155,7 +155,8 @@ int ishdr(char *line, char *header) {
  */
 void get_user(char *buf, int buflen) {
 #ifdef _WIN32
-    if (!GetUserName(buf, &buflen))
+    DWORD len = buflen;		       /* GetUserName takes a DWORD */
+    if (!GetUserName(buf, &len))
 	strncpy(buf, "unknown", buflen);
 #else
     struct passwd *p;
