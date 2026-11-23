@@ -14,6 +14,9 @@
 #include <stdlib.h>
 
 #include "enigma.h"
+#ifdef _WIN32
+#include <direct.h>		       /* chdir */
+#endif
 
 int main(int argc, char **argv) {
     char user[64];
