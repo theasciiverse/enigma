@@ -188,7 +188,8 @@ void get_user(char *buf, int buflen) {
 	 * and map it straight to a name.
 	 */
 	p = getpwuid(uid);
-	strncpy(buf, p->pw_name, buflen);
+	user = p ? p->pw_name : getenv("USER");
+	strncpy(buf, user && *user ? user : "player", buflen);
 	buf[buflen-1] = '\0';
     }
     endpwent();
