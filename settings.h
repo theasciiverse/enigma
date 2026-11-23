@@ -25,6 +25,25 @@
 #endif
 
 /*
+ * Built without fixed folders (no -DLEVELDIR or -DSAVEDIR, as in the
+ * Asciiverse build), Enigma works them out when it starts: the levels
+ * beside the program, in levels/ or ../share/tatham-enigma/levels/, and
+ * the saves in the player's own state folder, $XDG_STATE_HOME/enigma/
+ * (else ~/.local/state/enigma/; %LOCALAPPDATA%\enigma\ on Windows).
+ * See find_dirs() in misc.c.
+ */
+#ifndef LEVELDIR
+#define LEVELDIR enigma_leveldir
+#define ENIGMA_FIND_LEVELDIR
+#endif
+#ifndef SAVEDIR
+#define SAVEDIR enigma_savedir
+#define ENIGMA_FIND_SAVEDIR
+#endif
+extern char enigma_leveldir[], enigma_savedir[];
+void find_dirs(void);
+
+/*
  * The name of the level set Enigma should attempt to load on
  * startup if none is provided on the command line.
  */

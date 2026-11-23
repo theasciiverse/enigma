@@ -34,6 +34,7 @@ int main(int argc, char **argv) {
     }
 #endif
 
+    find_dirs();
     screen_init();
     if (setjmp(fatal_error_jmp_buf) == 0) {
 	char *setname = DEFAULTSET;

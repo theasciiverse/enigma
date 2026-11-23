@@ -16,8 +16,14 @@
 #ifndef _WIN32
 #  include <unistd.h>
 #  include <pwd.h>
+#else
+#  include <direct.h>
 #endif
 #include <sys/types.h>
+#include <sys/stat.h>
+#ifdef __APPLE__
+#  include <mach-o/dyld.h>
+#endif
 
 #include "enigma.h"
 
@@ -29,6 +35,111 @@ void fatal(char *string) {
     if (fatal_error_string)
 	strcpy(fatal_error_string, string);
     longjmp(fatal_error_jmp_buf, 1);
+}
+
+/*
+ * The folders Enigma reads its levels from and keeps its saves in, each
+ * ending in a separator. See settings.h.
+ */
+char enigma_leveldir[FILENAME_MAX] = "";
+char enigma_savedir[FILENAME_MAX] = "";
+
+#ifdef _WIN32
+#  define DIRSEP "\\"
+#  define make_dir(d) _mkdir(d)
+#else
+#  define DIRSEP "/"
+#  define make_dir(d) mkdir(d, 0700)
+#endif
+
+static int is_file(const char *path) {
+    FILE *fp = fopen(path, "r");
+    if (!fp)
+	return FALSE;
+    fclose(fp);
+    return TRUE;
+}
+
+/* The folder the running program is in, with a trailing separator. */
+static int exe_dir(char *buf, int size) {
+    char *p;
+#if defined _WIN32
+    DWORD n = GetModuleFileName(NULL, buf, size);
+    if (n == 0 || (int)n >= size)
+	return FALSE;
+    p = strrchr(buf, '\\');
+#elif defined __APPLE__
+    char tmp[FILENAME_MAX];
+    uint32_t n = sizeof(tmp);
+    if (_NSGetExecutablePath(tmp, &n) != 0 || !realpath(tmp, buf))
+	return FALSE;
+    p = strrchr(buf, '/');
+#else
+    int n = readlink("/proc/self/exe", buf, size-1);
+    if (n <= 0)
+	return FALSE;
+    buf[n] = '\0';
+    p = strrchr(buf, '/');
+#endif
+    if (!p)
+	return FALSE;
+    p[1] = '\0';
+    return TRUE;
+}
+
+void find_dirs(void) {
+#ifdef ENIGMA_FIND_LEVELDIR
+    {
+	static const char *const tries[] = {
+	    "levels" DIRSEP,
+	    ".." DIRSEP "share" DIRSEP "tatham-enigma" DIRSEP "levels" DIRSEP,
+	};
+	char base[FILENAME_MAX], set[FILENAME_MAX+32];
+	int i;
+
+	if (!exe_dir(base, sizeof(base)))
+	    base[0] = '\0';
+	for (i = 0; i < (int)lenof(tries); i++) {
+	    sprintf(enigma_leveldir, "%.*s%s", FILENAME_MAX-64, base, tries[i]);
+	    sprintf(set, "%s%s.set", enigma_leveldir, DEFAULTSET);
+	    if (is_file(set))
+		break;
+	}
+	if (i == (int)lenof(tries))     /* not found: the error names levels/ */
+	    sprintf(enigma_leveldir, "%.*s%s", FILENAME_MAX-64, base, tries[0]);
+    }
+#endif
+#ifdef ENIGMA_FIND_SAVEDIR
+    {
+	char *state = getenv("XDG_STATE_HOME");
+	char *home = getenv("HOME");
+#ifdef _WIN32
+	char *local = getenv("LOCALAPPDATA");
+	if (local && *local) {
+	    sprintf(enigma_savedir, "%.*s\\enigma", FILENAME_MAX-64, local);
+	    make_dir(enigma_savedir);
+	    strcat(enigma_savedir, "\\");
+	    return;
+	}
+	if (!home || !*home)
+	    home = getenv("USERPROFILE");
+#endif
+	if (state && *state == '/') {
+	    sprintf(enigma_savedir, "%.*s", FILENAME_MAX-64, state);
+	} else if (home && *home) {
+	    sprintf(enigma_savedir, "%.*s/.local", FILENAME_MAX-64, home);
+	    make_dir(enigma_savedir);
+	    strcat(enigma_savedir, "/state");
+	} else {
+	    strcpy(enigma_savedir, "." DIRSEP);   /* nowhere better */
+	    return;
+	}
+	make_dir(enigma_savedir);
+	strcat(enigma_savedir, DIRSEP "enigma");
+	make_dir(enigma_savedir);
+	strcat(enigma_savedir, DIRSEP);
+    }
+#endif
 }
 
 /*
