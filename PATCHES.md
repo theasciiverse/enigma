@@ -35,6 +35,11 @@ and status lines).
   `/etc/passwd` (a container, say) Enigma crashed before the menu. It
   falls back to `$USER`, then to "player". The name only goes into save
   file names.
+- **Follows a resize** (`screen.c`): every screen already laid itself
+  out in the middle of the terminal when drawn, but a resize was ignored
+  until the next move. On `KEY_RESIZE` the play and movie screens now
+  draw the last level screen again, and the menu works out its place
+  again, so all three move back to the middle at once.
 - **Windows** (`main.c`): `chdir()` is declared through `<direct.h>`;
   the call was an implicit declaration, an error in C99 and later.
   Gurusamy Sarathy's Windows support (2001, PDCurses) is otherwise
@@ -49,7 +54,9 @@ configure itself still works when given `CC="cc -std=gnu89"`; its test
 programs use implicit int, which GCC 14 rejects. Linux links ncurses
 statically in Alpine, so the binary needs nothing installed and reads the
 system's terminfo; macOS links the system ncurses; Windows links PDCurses
-statically from MSYS2.
+statically from MSYS2, whose package (PDCursesMod) keeps `curses.h` in
+`include/pdcurses`, is built wide and UTF-8 (`-DPDC_WIDE
+-DPDC_FORCE_UTF8`, or the link misses `endwin`) and needs `winmm`.
 
 ## Name
 

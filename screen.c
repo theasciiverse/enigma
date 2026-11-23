@@ -140,11 +140,34 @@ void screen_level_finish(void) {
     /* In this implementation, we do nothing. */
 }
 
+/*
+ * The last level screen drawn, so a resize can draw it again in the
+ * middle of the new terminal size (both stay valid while the caller
+ * waits for the next key).
+ */
+static gamestate *last_display;
+static char *last_message;
+
+/*
+ * KEY_RESIZE: the terminal changed size. PDCurses only takes the new size
+ * when asked.
+ */
+static void screen_resized(void) {
+#if defined(PDCURSES)
+    resize_term(0, 0);
+#endif
+    if (last_display)
+	screen_level_display(last_display, last_message);
+}
+
 void screen_level_display(gamestate *s, char *message) {
     int sw, sh;
     int i, j;
     int dx, dy;
     char buf[20];
+
+    last_display = s;
+    last_message = message;
 
     getmaxyx(stdscr, sh, sw);
 
@@ -233,6 +256,10 @@ int screen_level_getmove(int playing) {
     int i;
     do {
 	i = getch();
+	if (i == KEY_RESIZE) {
+	    screen_resized();
+	    continue;
+	}
 	if (playing) {
 	    if (i == KEY_UP) i = 'k';
 	    if (i == KEY_DOWN) i = 'j';
@@ -258,6 +285,10 @@ int screen_movie_getmove(void) {
     int i;
     do {
 	i = getch();
+	if (i == KEY_RESIZE) {
+	    screen_resized();
+	    continue;
+	}
 	if (i >= 'A' && i <= 'Z')
 	    i += 'a' - 'A';
 	if (i == ' ') i = 'f';
@@ -397,6 +428,18 @@ int screen_main_menu(levelset *set, gamestate **saves,
 	move(0,0);
 	refresh();
 	k = getch();
+	if (k == KEY_RESIZE) {
+	    /* lay the menu out again in the middle of the new size */
+#if defined(PDCURSES)
+	    resize_term(0, 0);
+#endif
+	    getmaxyx(stdscr, sy, sx);
+	    werase(stdscr);
+	    dx = (sx - 2*colwidth - colgap) / 2;
+	    dy = (sy - height) / 2;
+	    dx2 = dx + colwidth + colgap;
+	    continue;
+	}
 	if (k >= 'A' && k <= 'Z') k += 'a'-'A';
 	if (k >= '0' && k <= '9')
 	    save = (k - '1' + 10) % 10;

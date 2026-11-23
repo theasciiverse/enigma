@@ -41,9 +41,16 @@ case $platform in
     if [ -f /etc/alpine-release ]; then libs="-static -lncursesw"; else libs="-lncurses"; fi
     curses='-DCURSES_HDR=<ncurses.h>'; exe=enigma ;;
   macos)   libs="-lncurses"; curses='-DCURSES_HDR=<ncurses.h>'; exe=enigma ;;
-  windows) libs="-static -lpdcurses -ladvapi32"; curses='-DCURSES_HDR=<curses.h>'; exe=enigma.exe ;;
+  windows) libs="-static -lpdcurses_wincon -lwinmm -ladvapi32"; curses='-DCURSES_HDR=<curses.h>'; exe=enigma.exe ;;
 esac
+# MSYS2's pdcurses (PDCursesMod) keeps curses.h in include/pdcurses and
+# the console build as libpdcurses_wincon.a, built wide and UTF-8 (the
+# header's endwin must match: its pdcurses.h sets these two), and plays
+# sounds through winmm
+inc=
+[ "$platform" = windows ] && [ -d "${MSYSTEM_PREFIX:-/nonexistent}/include/pdcurses" ] \
+  && inc="-I$MSYSTEM_PREFIX/include/pdcurses -DPDC_WIDE -DPDC_FORCE_UTF8"
 libs=${LIBS:-$libs}
-$CC -std=gnu89 $CFLAGS "$curses" -DHAS_ATTR_T -I. -o "$out/$exe" \
+$CC -std=gnu89 $CFLAGS $inc "$curses" -DHAS_ATTR_T -I. -o "$out/$exe" \
   main.c screen.c engine.c memory.c levelfile.c misc.c savefile.c $libs
 ${STRIP:-strip} "$out/$exe"
