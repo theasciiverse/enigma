@@ -1,0 +1,49 @@
+# System packages (.deb, .rpm, .apk, Arch) for Enigma, built by nfpm from
+# the same static binary as the av archive. The release workflow sets
+# VERSION, RELEASE (our packaging release) and ARCH (amd64 or arm64).
+#
+# Named tatham-enigma, program /usr/bin/tatham-enigma, levels in
+# /usr/share/tatham-enigma/levels: Debian and others ship a different
+# game as enigma (/usr/games/enigma, the Oxyd-style one), so ours must
+# not take that name; both can be installed side by side. No .desktop
+# file on purpose: av is the one place titles are started from.
+name: tatham-enigma
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+release: ${RELEASE}
+section: games
+priority: optional
+maintainer: Asciiverse <packages@asciiverse.sh>
+vendor: Asciiverse
+homepage: https://github.com/theasciiverse/enigma
+license: MIT
+description: |
+  Simon Tatham's Enigma, a puzzle game of falling arrows and bombs.
+  Dig through earth, push arrows, sacks and bombs, take every piece of
+  gold and leave by the exit, without letting anything fall on you.
+  Twelve levels, ten save slots, and replays of your solutions. The
+  terminal game by Simon Tatham (2000 to 2004), not the Oxyd-style game
+  of the same name. Packaged by Asciiverse.
+contents:
+  - src: build/linux/enigma
+    dst: /usr/bin/tatham-enigma
+    file_info: { mode: 0755 }
+  - src: ./levels/*.level
+    dst: /usr/share/tatham-enigma/levels/
+    file_info: { mode: 0644 }
+  - src: levels/original.set
+    dst: /usr/share/tatham-enigma/levels/original.set
+    file_info: { mode: 0644 }
+  - src: LICENCE
+    dst: /usr/share/doc/tatham-enigma/copyright
+    file_info: { mode: 0644 }
+  - src: asciiverse/README.md
+    dst: /usr/share/doc/tatham-enigma/README.md
+    file_info: { mode: 0644 }
+  - src: CHANGELOG
+    dst: /usr/share/doc/tatham-enigma/CHANGELOG
+    file_info: { mode: 0644 }
+  - src: PATCHES.md
+    dst: /usr/share/doc/tatham-enigma/PATCHES.md
+    file_info: { mode: 0644 }
